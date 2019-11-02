@@ -1,0 +1,494 @@
+package Othello;
+import java.util.Random;
+
+class Player{
+    private String name;  //プレイヤー名
+    private int num;  //プレイヤーの石の割り当て
+    private int placedStone;  //すでに置かれた石の数
+    private int candMove[] = new int[100];  //プレイヤーの候補手
+    private Board board = new Board();  //現局面
+    private int dir[][] = {{-1,-1},{-1,0},{-1,1},{0,-1},{0,1},{1,-1},{1,0},{1,1}};  //方向
+    private static final int MMDEPTH = 4;  //mini-max法の読む深さ(5までなら割とスムーズ)
+    private static final int ABDEPTH = 6;  //αβ法の読む深さ(8までなら割とスムーズ)
+
+    Player(String inputName,int inputNum){
+        name = inputName;
+        num = inputNum;
+        placedStone = 2;
+    }
+
+    String getName(){
+        return name;
+    }
+    int getNum(){
+        return num;
+    }
+
+    int getPlacedStone() {
+        return placedStone;
+    }
+    void setPlacedStone(int num){
+        placedStone = num;
+    }
+
+    //ランダムムーブ
+    int randGetMove(Board nowBoard,int[] nowCandMove){
+        int count;  //候補手の数
+        int move;  //着手
+        Random r = new Random();
+
+        board = nowBoard;  //プレイヤーがみている局面を更新
+        candMove = nowCandMove;  //プレイヤーの候補手を更新
+        count = countCand();  //候補手の数
+        move = candMove[r.nextInt(count)];  //着手をランダムに決定
+
+        return move;
+    }
+
+    //ネガマックス法
+    int negaGetMove(Board realBoard,int[] nowCandMove){
+        int count;  //候補手の数
+        int depth = 0;  //深さ
+        int move = 0;  //着手
+        int x;  //返ってきた評価値
+        int max = -999999;  //評価値の最大
+        Board nowBoard = new Board();  //現局面
+
+        realBoard.copy(nowBoard);  
+        candMove = nowCandMove;
+        count = countCand();
+
+        //cpuの挙動を見たくなければ、ここと、8行下と、17行下の出力をコメントアウト
+        System.out.println("I'm thinking...");
+        for(int i=0;i<count;i++){
+
+            Board nextBoard = new Board();  //次の局面
+
+            //着手の座標計算
+            int column = candMove[i]/10;
+            int row = candMove[i]%10;
+            System.out.println("("+(char)(column+'a'-1)+","+row+")");
+
+            nextBoard = reverse(row,column,nowBoard,num);  //ひっくり返し処理
+
+            Board mirBoard = new Board();
+            nextBoard.copy(mirBoard);  //現局面をコピー
+
+            x = -negaMax(mirBoard,opposite(num),depth);  //次の深さへ
+
+            System.out.println("Value: "+x);
+            
+            if(x>max){
+                max = x;
+                move = candMove[i];  //指し手を更新
+            }
+        }
+        
+        return move;
+    }
+
+    //ネガマックス法本体
+    private int negaMax(Board nowBoard,int number,int depth){
+        if(!existLegalMove(nowBoard,number) || depth==MMDEPTH){  //次の手がないか深さが一定に達した
+            
+            int ev = -(evaluation(nowBoard,num)-evaluation(nowBoard,opposite(num)));  //評価値取得
+            return ev;
+        }
+        int count = 0;
+        int max = -999999;
+        int[] nextCand = new int[100];
+        int x;
+        Board newBoard = new Board();
+
+        nowBoard.copy(newBoard);
+        nextCand = getLegalMove(nowBoard,number);
+        count = countCand(nextCand);
+
+        for(int i=0;i<count;i++){
+            Board nextBoard = new Board();
+            int column = nextCand[i]/10;
+            int row = nextCand[i]%10;
+
+            nextBoard = reverse(row,column,nowBoard,number);
+            
+            Board mirBoard = new Board();
+            nextBoard.copy(mirBoard);
+
+            x = -negaMax(mirBoard,opposite(number),depth+1);
+            if(x>max) max = x;
+        }
+        return max;
+    }
+
+    //αβ法
+    int ABGetMove(Board realBoard,int[] nowCandMove){
+        int count;
+        int depth = 0;
+        int move = 0;
+        int x;
+        int max = -999999;
+        Board nowBoard = new Board();
+
+        realBoard.copy(nowBoard);
+        candMove = nowCandMove;
+        count = countCand();
+
+        //cpuの挙動を見たくなければ、ここと、6行下と、13行下の出力をコメントアウト
+        System.out.println("I'm thinking...");
+        for(int i=0;i<count;i++){
+            Board nextBoard = new Board();
+            int column = candMove[i]/10;
+            int row = candMove[i]%10;
+            System.out.println("("+(char)(column+'a'-1)+","+row+")");
+            
+            nextBoard = reverse(row,column,nowBoard,num);
+            Board mirBoard = new Board();
+            nextBoard.copy(mirBoard);
+            
+            x = -ABnegaMax(mirBoard,opposite(num),depth,-999999,-max);
+            System.out.println("Value: "+x);
+            
+            if(x>max){
+                //System.out.println("最善手更新"+move+"->"+candMove[i]);
+                max = x;
+                move = candMove[i];
+            }
+        }
+        
+        return move;
+    }
+
+    //αβ法本体
+    private int ABnegaMax(Board nowBoard,int number,int depth,int alpha,int beta){
+        int[] nextCand = new int[100];
+        int count;
+        if((!existLegalMove(nowBoard,number) || depth==ABDEPTH)){
+            /*
+            if(existLegalMove(nowBoard,number) && (number==num)){
+                nextCand = getLegalMove(nowBoard,number);
+                count = countCand(nextCand);
+                return -((evaluation(nowBoard,number)-evaluation(nowBoard,opposite(number)))+count*5);
+            }
+            */
+            int ev;
+            ev = -(evaluation(nowBoard,num)-evaluation(nowBoard,opposite(num)));
+            //System.out.println("EV: "+ev);
+            return ev;
+        }
+        
+        int x;
+        int max = alpha;
+        Board newBoard = new Board();
+
+        nowBoard.copy(newBoard);
+        nextCand = getLegalMove(nowBoard,number);
+        count = countCand(nextCand);
+        //System.out.println("depth: "+depth+" alpha: "+alpha+" beta: "+beta);
+        
+        for(int i=0;(i<count);i++){
+            Board nextBoard = new Board();
+            int column = nextCand[i]/10;
+            int row = nextCand[i]%10;
+
+            nextBoard = reverse(row,column,nowBoard,number);
+            
+            Board mirBoard = new Board();
+            nextBoard.copy(mirBoard);
+
+            //System.out.println("("+(char)(column+'a'-1)+","+row+")");
+
+            x = -ABnegaMax(mirBoard,opposite(number),depth+1,-beta,-max);
+            if(x>=beta){
+                //System.out.println("beta切り上げ "+x);
+                return x;
+            }
+            if(x>max){
+                //System.out.println("max更新"+x);
+                max = x;
+            }
+        }
+        return max;
+    }
+
+    //評価関数
+    private int evaluation(Board nowBoard,int number){
+        int value;
+        value = nowBoard.getValue(number);
+
+        return value;
+    }
+
+    //ひっくり返しシミュレーション
+    private Board reverse(int row,int column,Board nowBoard,int number){
+        Board nextBoard = new Board();
+        nowBoard.copy(nextBoard);
+        //方向をまわすfor文
+        for(int i=0;i<8;i++){
+            int count = 0;  //ひっくり返せる枚数
+            count = countReversibleStone(row,column,dir[i][0],dir[i][1],number);
+            if(count>0){
+                for(int j=1;j<=count;j++){  //反対の自分の駒までひっくり返し
+                    nextBoard.update(row+dir[i][0]*j,column+dir[i][1]*j,number);
+                }
+            }
+        }
+        nextBoard.update(row,column,number);  //置いた駒
+
+        return nextBoard;
+    }
+
+    //候補手の数を数える
+    private int countCand(){
+        int count = 0;
+        while(candMove[count]!=0) count++;
+        return count;
+    }
+    private int countCand(int[] nextCand){
+        int count = 0;
+        while(nextCand[count]!=0) count++;
+        return count;
+    }
+
+    //着手できる合法手があるか
+    private boolean existLegalMove(Board nowBoard,int number){
+        board = nowBoard;
+        //盤面の大きさ
+        int field = board.getSize()-2;
+
+        for(int i=1;i<=field;i++){
+            for(int j=1;j<=field;j++){
+                if(isLegalMove(i,j,number)) return true;
+            }
+        }
+        return false;
+    }
+
+    boolean existLegalMove(Board nowBoard){
+        board = nowBoard;
+        //盤面の大きさ
+        int field = board.getSize()-2;
+
+        for(int i=1;i<=field;i++){
+            for(int j=1;j<=field;j++){
+                if(isLegalMove(i,j)) return true;
+            }
+        }
+        return false;
+    }
+
+    //合法手かどうか
+    private boolean isLegalMove(int row,int column){
+        //盤面の大きさ
+        int field = board.getSize()-2;
+
+        //盤外かどうか
+        if(row<1 || field<row || column<1 || field<column) return false;
+        //そこに駒を置けるか
+        if(board.getField(row,column)!=0) return false;
+
+        //方向をまわすfor文
+        for(int i=0;i<8;i++){
+            int count = 0;  //ひっくり返せる枚数
+
+            count = countReversibleStone(row,column,dir[i][0],dir[i][1]);
+
+            if(count>0) return true;
+        }
+        return false;
+    }
+
+    //合法手かどうか
+    private boolean isLegalMove(int row,int column,int number){
+        //盤面の大きさ
+        int field = board.getSize()-2;
+
+        //盤外かどうか
+        if(row<1 || field<row || column<1 || field<column) return false;
+        //そこに駒を置けるか
+        if(board.getField(row,column)!=0) return false;
+
+        //方向をまわすfor文
+        for(int i=0;i<8;i++){
+            int count = 0;  //ひっくり返せる枚数
+
+            count = countReversibleStone(row,column,dir[i][0],dir[i][1],number);
+
+            if(count>0) return true;
+        }
+        return false;
+    }
+
+    //ひっくり返せる駒の数え上げ
+    private int countReversibleStone(int row,int column, int s, int t,int number){
+        //盤面の大きさ
+        int field = board.getSize()-2;
+        //自分の駒と駒の間の数
+        int contents;
+        //置けるかどうか
+        boolean judge;
+
+        //初期化
+        contents = 0;
+        judge = false;
+
+        for(int j=1;j<=field;j++){  //直線の調査
+            if(board.getField(row+s*j,column+t*j)==-1) break;  //壁判定
+            if(board.getField(row+s*j,column+t*j)==number){  //反対の自分の駒発見
+                contents = j-1;
+                break;
+            }
+        }
+        if(contents>0){  //駒と駒の間にマスがある
+            judge = true;
+            for(int j=1;j<=contents;j++){  //間のマスの調査
+                if(board.getField(row+s*j,column+t*j)!=opposite(number)){  //相手の駒以外だったらfalse
+                    judge = false;
+                    break;
+                }
+            }
+        }
+        if(judge){
+            return contents;
+        }
+        return 0;
+    }
+
+    //ひっくり返せる駒の数え上げ
+    private int countReversibleStone(int row,int column, int s, int t){
+        //盤面の大きさ
+        int field = board.getSize()-2;
+        //自分の駒と駒の間の数
+        int contents;
+        //置けるかどうか
+        boolean judge;
+
+        //初期化
+        contents = 0;
+        judge = false;
+
+        for(int j=1;j<=field;j++){  //直線の調査
+            if(board.getField(row+s*j,column+t*j)==-1) break;  //壁判定
+            if(board.getField(row+s*j,column+t*j)==num){  //反対の自分の駒発見
+                contents = j-1;
+                break;
+            }
+        }
+        if(contents>0){  //駒と駒の間にマスがある
+            judge = true;
+            for(int j=1;j<=contents;j++){  //間のマスの調査
+                if(board.getField(row+s*j,column+t*j)!=opposite(num)){  //相手の駒以外だったらfalse
+                    judge = false;
+                    break;
+                }
+            }
+        }
+        if(judge){
+            return contents;
+        }
+        return 0;
+    }
+
+    //候補手の列挙
+    int[] getLegalMove(){
+        int count = 0;
+        int field = board.getSize()-2;
+        int dimention = board.getSize()*board.getSize();
+        int legalMove[] = new int[dimention];
+        for(int i=0;i<dimention;i++){
+            legalMove[i] = 0;
+        }
+        /*
+        for(int j=1;j<=field;j++){
+            if(isLegalMove(1,j)){
+                legalMove[count] = j*10+1;
+                count++;
+            }
+            if(isLegalMove(8,j)){
+                legalMove[count] = j*10+8;
+                count++;
+            }
+        }
+        for(int i=2;i<field;i++){
+            for(int j=1;j<=field;j++){
+                if(isLegalMove(i,j)){
+                    legalMove[count] = j*10+i;
+                    count++;
+                }
+            }
+        }
+        */
+        
+        for(int i=1;i<=field;i++){
+            for(int j=1;j<=field;j++){
+                if(isLegalMove(i,j)){
+                    legalMove[count] = j*10+i;
+                    count++;
+                }
+            }
+        }
+        
+
+        return legalMove;
+    }
+
+    private int[] getLegalMove(Board nowBoard,int number){
+        int count = 0;
+        int field = nowBoard.getSize()-2;
+        int dimention = nowBoard.getSize()*board.getSize();
+        int legalMove[] = new int[dimention];
+        for(int i=0;i<dimention;i++){
+            legalMove[i] = 0;
+        }
+
+        /*
+        for(int j=1;j<=field;j++){
+            if(isLegalMove(1,j,number)){
+                legalMove[count] = j*10+1;
+                count++;
+            }
+            if(isLegalMove(8,j,number)){
+                legalMove[count] = j*10+8;
+                count++;
+            }
+        }
+        for(int i=2;i<field;i++){
+            for(int j=1;j<=field;j++){
+                if(isLegalMove(i,j,number)){
+                    legalMove[count] = j*10+i;
+                    count++;
+                }
+            }
+        }
+        */
+        for(int i=1;i<=field;i++){
+            for(int j=1;j<=field;j++){
+                if(isLegalMove(i,j,number)){
+                    legalMove[count] = j*10+i;
+                    count++;
+                }
+            }
+        }
+        
+
+        return legalMove;
+    }
+
+    //候補手の表示
+    void displayLegalMove(){
+        //盤面の大きさ
+        int field = board.getSize()-2;
+
+        for(int i=1;i<=field;i++){
+            for(int j=1;j<=field;j++){
+                if(isLegalMove(i,j)) System.out.print("("+(char)(j+'a'-1)+","+i+") ");
+            }
+        }
+        System.out.println();
+    }
+
+    //相手の駒
+    private int opposite(int player){
+        return 3-player;
+    }
+
+}
