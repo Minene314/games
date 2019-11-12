@@ -21,7 +21,7 @@ public class ReadOder{
 
         while(token.hasMoreTokens()){
             tmps = token.nextToken();
-            System.out.println(tmps);	
+            System.out.println(tmps);
             if(isNum(tmps)){
                 tmpi = Integer.parseInt(tmps);
                 tmps = "push";

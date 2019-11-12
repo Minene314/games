@@ -3,11 +3,11 @@ package calculator;
 import java.applet.Applet;
 import java.awt.TextField;
 import java.awt.Label;
-import java.awt.Button;	
+import java.awt.Button;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
-import java.awt.Graphics;		
+import java.awt.Graphics;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.awt.Dimension;
@@ -24,7 +24,7 @@ public class CalcApplet extends Applet implements ActionListener {
     Button dispButton;
 
     public void init( ) {
-        Label label[ ] = new Label[1];	
+        Label label[ ] = new Label[1];
         label[0] = new Label("中置記法の式");
         this.add(label[0]);
         this.valueField[0] = new TextField( );
@@ -34,11 +34,11 @@ public class CalcApplet extends Applet implements ActionListener {
         this.transButton = new Button("変換");
         this.add(this.transButton);
         this.transButton.addActionListener(this);
-        
+
         this.creatButton = new Button("生成");
         this.add(this.creatButton);
         this.creatButton.addActionListener(this);
-        
+
         this.dispButton = new Button("実行");
         this.add(this.dispButton);
         this.dispButton.addActionListener(this);

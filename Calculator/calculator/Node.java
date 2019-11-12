@@ -24,7 +24,7 @@ class Node{
             char tnp;
             tnp = tmp.charAt(i);
 
-            if(tnp=='-' && (i==0 
+            if(tnp=='-' && (i==0
             || tmp.charAt(i-1)=='('
             || tmp.charAt(i-1)=='+'
             || tmp.charAt(i-1)=='-'
@@ -59,7 +59,7 @@ class Node{
                     //System.exit(0);
                 }
             }
-            
+
             start = node.charAt(0);
             finish = node.charAt(node.length()-1);
 
@@ -71,7 +71,7 @@ class Node{
             }
 
             opPlace = getOpPlace();  //演算子の位置を取得
-            
+
             if(opPlace==0){  //演算子がなければ数値
                 left = null;
                 right = null;
@@ -80,17 +80,17 @@ class Node{
 
             left = new Node(node.substring(0,opPlace));  //演算子の前半を再帰的に二分木作成
             left.createTree();
-            
+
             right = new Node(node.substring(opPlace+1));  //演算子の後半を再帰的に二分木作成
             right.createTree();
-            
+
             node = node.substring(opPlace,opPlace+1);  //このノードに演算子を挿入
         }catch(StringIndexOutOfBoundsException e){
             System.out.println("式を入力してください");
             //e.printStackTrace();
         }
     }
-    
+
     //走査
     String traceTree(){
         String l = "";
@@ -110,7 +110,7 @@ class Node{
 
         for(int i=0;i<node.length();i++){
             tmp = node.charAt(i);
-            if(!isNum(tmp) 
+            if(!isNum(tmp)
                 && tmp!='+'
                 && tmp!='-'
                 && tmp!='*'
@@ -140,7 +140,6 @@ class Node{
                     }
                 }
                 i = j;
-                
             }
             if(tmp1=='+'
             || tmp1=='-'

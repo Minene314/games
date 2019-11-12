@@ -14,7 +14,7 @@ public class Calc{
             int tmpi;
             String oder1;
             StringTokenizer token;
-            
+
             token = new StringTokenizer(str," ");
 
             while(token.hasMoreTokens()){
