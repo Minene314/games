@@ -7,7 +7,7 @@ class Game{
     private Player players[] = new Player[2];  //ゲームプレイヤー
     private Board board = new Board();  //盤面
     private int row,column;  //着手
-    private int mode = -1;  //ゲームモード
+    private int mode = -1;
     private int dir[][] = {{-1,-1},{-1,0},{-1,1},{0,-1},{0,1},{1,-1},{1,0},{1,1}};  //方向
     
     
@@ -186,7 +186,7 @@ class Game{
         
         //各種cpuによって次の手を取得
         if("negacom".equals(players[player].getName())) move = players[player].negaGetMove(nowBoard,CandMove);
-        else if("abcom".equals(players[player].getName())) move = players[player].ABGetMove(nowBoard,CandMove);
+        else if("abcom".equals(players[player].getName())) move = players[player].ABGetMove(nowBoard);
         else move = players[player].randGetMove(nowBoard,CandMove);
 
         return move;

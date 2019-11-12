@@ -43,7 +43,7 @@ class Board{
         field[7][8].setValue(-11);
         field[8][2].setValue(-11);
         field[8][7].setValue(-11);
-        field[7][2].setValue(-16);
+        field[2][2].setValue(-16);
         field[2][7].setValue(-16);
         field[7][2].setValue(-16);
         field[7][7].setValue(-16);

@@ -9,7 +9,7 @@ class Player{
     private Board board = new Board();  //現局面
     private int dir[][] = {{-1,-1},{-1,0},{-1,1},{0,-1},{0,1},{1,-1},{1,0},{1,1}};  //方向
     private static final int MMDEPTH = 4;  //mini-max法の読む深さ(5までなら割とスムーズ)
-    private static final int ABDEPTH = 6;  //αβ法の読む深さ(8までなら割とスムーズ)
+    private static final int ABDEPTH = 7;  //αβ法の読む深さ(8までなら割とスムーズ)
 
     Player(String inputName,int inputNum){
         name = inputName;
@@ -91,7 +91,10 @@ class Player{
     private int negaMax(Board nowBoard,int number,int depth){
         if(!existLegalMove(nowBoard,number) || depth==MMDEPTH){  //次の手がないか深さが一定に達した
             
-            int ev = -(evaluation(nowBoard,num)-evaluation(nowBoard,opposite(num)));  //評価値取得
+            int ev;
+            ev = (evaluation(nowBoard,num)-evaluation(nowBoard,opposite(num)));  //評価値取得
+            //System.out.println("EV: "+ev);
+            if(number!=num) return -ev;
             return ev;
         }
         int count = 0;
@@ -120,25 +123,66 @@ class Player{
         return max;
     }
 
+    private int[][] sortCandMove(int[][] nextCand,int count){
+        int tmp;
+
+        for(int i=0;i<count-1;i++){
+            for(int j=count-1;j>i;j--){
+                if(nextCand[j-1][1]<nextCand[j][1]){
+                    //System.out.println(i+","+j+"swaped");
+                    tmp = nextCand[j][0];
+                    nextCand[j][0] = nextCand[j-1][0];
+                    nextCand[j-1][0] = tmp;
+                    tmp = nextCand[j][1];
+                    nextCand[j][1] = nextCand[j-1][1];
+                    nextCand[j-1][1] = tmp;
+                }
+            }
+        }
+        return nextCand;
+    }
+
     //αβ法
-    int ABGetMove(Board realBoard,int[] nowCandMove){
+    int ABGetMove(Board realBoard){
         int count;
         int depth = 0;
         int move = 0;
         int x;
         int max = -999999;
         Board nowBoard = new Board();
+        int[][] nextCand = new int[100][2];
 
         realBoard.copy(nowBoard);
-        candMove = nowCandMove;
-        count = countCand();
+        nextCand = getLegalMove(nowBoard,num,nextCand);
+        count = countCand(nextCand);
+        
+        for(int i=0;i<count;i++){
+            Board tmpBoard = new Board();
+            int column = nextCand[i][0]/10;
+            int row = nextCand[i][0]%10;
+            System.out.print("("+(char)(column+'a'-1)+","+row+")");
+            
+            tmpBoard = reverse(row,column,nowBoard,num);
+            nextCand[i][1] = (evaluation(tmpBoard,num)-evaluation(tmpBoard,opposite(num)));
+            System.out.println(nextCand[i][1]);
+        }
+        nextCand = sortCandMove(nextCand,count);
+        
+        System.out.println("sortedCandMove");
+        for(int i=0;i<count;i++){
+            int column = nextCand[i][0]/10;
+            int row = nextCand[i][0]%10;
+            System.out.println("("+(char)(column+'a'-1)+","+row+")"+nextCand[i][1]);
+        }
+        
+
 
         //cpuの挙動を見たくなければ、ここと、6行下と、13行下の出力をコメントアウト
         System.out.println("I'm thinking...");
         for(int i=0;i<count;i++){
             Board nextBoard = new Board();
-            int column = candMove[i]/10;
-            int row = candMove[i]%10;
+            int column = nextCand[i][0]/10;
+            int row = nextCand[i][0]%10;
             System.out.println("("+(char)(column+'a'-1)+","+row+")");
             
             nextBoard = reverse(row,column,nowBoard,num);
@@ -151,16 +195,17 @@ class Player{
             if(x>max){
                 //System.out.println("最善手更新"+move+"->"+candMove[i]);
                 max = x;
-                move = candMove[i];
+                move = nextCand[i][0];
             }
         }
         
         return move;
     }
+    
 
     //αβ法本体
     private int ABnegaMax(Board nowBoard,int number,int depth,int alpha,int beta){
-        int[] nextCand = new int[100];
+        int[][] nextCand = new int[100][2];
         int count;
         if((!existLegalMove(nowBoard,number) || depth==ABDEPTH)){
             /*
@@ -171,8 +216,9 @@ class Player{
             }
             */
             int ev;
-            ev = -(evaluation(nowBoard,num)-evaluation(nowBoard,opposite(num)));
+            ev = (evaluation(nowBoard,num)-evaluation(nowBoard,opposite(num)));
             //System.out.println("EV: "+ev);
+            if(number!=num) return -ev;
             return ev;
         }
         
@@ -181,14 +227,27 @@ class Player{
         Board newBoard = new Board();
 
         nowBoard.copy(newBoard);
-        nextCand = getLegalMove(nowBoard,number);
+        nextCand = getLegalMove(nowBoard,number,nextCand);
         count = countCand(nextCand);
         //System.out.println("depth: "+depth+" alpha: "+alpha+" beta: "+beta);
+
+        
+        for(int i=0;i<count;i++){
+            Board tmpBoard = new Board();
+            int column = nextCand[i][0]/10;
+            int row = nextCand[i][0]%10;
+            //System.out.print("("+(char)(column+'a'-1)+","+row+")");
+            
+            tmpBoard = reverse(row,column,nowBoard,num);
+            nextCand[i][1] = (evaluation(tmpBoard,num)-evaluation(tmpBoard,opposite(num)));
+            //System.out.println(nextCand[i][1]);
+        }
+        nextCand = sortCandMove(nextCand,count);
         
         for(int i=0;(i<count);i++){
             Board nextBoard = new Board();
-            int column = nextCand[i]/10;
-            int row = nextCand[i]%10;
+            int column = nextCand[i][0]/10;
+            int row = nextCand[i][0]%10;
 
             nextBoard = reverse(row,column,nowBoard,number);
             
@@ -246,6 +305,11 @@ class Player{
     private int countCand(int[] nextCand){
         int count = 0;
         while(nextCand[count]!=0) count++;
+        return count;
+    }
+    private int countCand(int[][] nextCand){
+        int count = 0;
+        while(nextCand[count][0]!=0) count++;
         return count;
     }
 
@@ -464,6 +528,48 @@ class Player{
             for(int j=1;j<=field;j++){
                 if(isLegalMove(i,j,number)){
                     legalMove[count] = j*10+i;
+                    count++;
+                }
+            }
+        }
+        
+
+        return legalMove;
+    }
+
+    private int[][] getLegalMove(Board nowBoard,int number,int[][] legalMove){
+        int count = 0;
+        int field = nowBoard.getSize()-2;
+        int dimention = nowBoard.getSize()*board.getSize();
+        for(int i=0;i<dimention;i++){
+            legalMove[i][0] = 0;
+            legalMove[i][1] = 0;
+        }
+
+        /*
+        for(int j=1;j<=field;j++){
+            if(isLegalMove(1,j,number)){
+                legalMove[count] = j*10+1;
+                count++;
+            }
+            if(isLegalMove(8,j,number)){
+                legalMove[count] = j*10+8;
+                count++;
+            }
+        }
+        for(int i=2;i<field;i++){
+            for(int j=1;j<=field;j++){
+                if(isLegalMove(i,j,number)){
+                    legalMove[count] = j*10+i;
+                    count++;
+                }
+            }
+        }
+        */
+        for(int i=1;i<=field;i++){
+            for(int j=1;j<=field;j++){
+                if(isLegalMove(i,j,number)){
+                    legalMove[count][0] = j*10+i;
                     count++;
                 }
             }
