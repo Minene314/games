@@ -8,7 +8,7 @@
 	$java Othello.Main
 ### 遊び方
 実行後、プレイヤーネームを入力する。  
-ここで"randcom","negacom"もしくは"abcom"と入力するとvs COMができる。  
+ここで"randcom","negacom","abcom"もしくは"moncom"と入力するとvs COMができる。  
 あとはオセロの流れに沿ってゲームするだけ。  
 
 ## アプレットの中置記法を認識する計算機
