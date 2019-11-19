@@ -15,7 +15,7 @@ class Game{
     //ゲーム本体
     void play(){
         System.out.println("play the game!!");
-        System.out.println("If you want to play \"VS cpu\", input (randcom/negacom/abcom).");
+        System.out.println("If you want to play \"VS cpu\", input (randcom/negacom/abcom/moncom).");
 
         //プレイヤー情報入力
         for(int i=0;i<2;i++){
@@ -25,7 +25,7 @@ class Game{
         for(int i=0;i<2;i++){
             String name = players[i].getName();
             System.out.println("welcome "+name);
-            if(name.equals("randcom") || name.equals("negacom") || name.equals("abcom")){
+            if(name.equals("randcom") || name.equals("negacom") || name.equals("abcom") || name.equals("moncom")){
                 if(mode+i==1) mode = 2;
                 else mode = i;
             }
@@ -42,20 +42,9 @@ class Game{
 
         //ゲーム
         while(true){
-            int flag = 0;  //パスのフラグ
             board.display();
 
-            //二回連続でpassが続いたらゲーム終了
-            while(flag!=2){
-                if(players[player].existLegalMove(board)) break;
-                System.out.println("Player: "+players[player].getName()+ " pass");
-                player = opposite(player);
-                flag++;
-            }
-            if(flag==2){  //両者合法手がなければゲーム終了
-                System.out.println("Game Over!");
-                break;
-            }
+            if(isGameOver()) break;
 
             if(getMove()==-1){  //着手
                 System.out.println("Game Over!");
@@ -66,14 +55,31 @@ class Game{
             player = opposite(player);
         }
 
+        //終了の流れ
         players[0].setPlacedStone(board.countStone(players[0].getNum()));  //先手の石の数
         players[1].setPlacedStone(board.countStone(players[1].getNum()));  //後手の石の数
         for(int i=0;i<2;i++){
             System.out.println(players[i].getName()+": "+players[i].getPlacedStone());
         }
-        victory = winner(players[0].getPlacedStone(), players[1].getPlacedStone());  //勝者の計算
+        victory = winner(players[0].getPlacedStone(),players[1].getPlacedStone());  //勝者の計算
         System.out.println("Winner: "+((victory==-1)?"Draw":players[victory].getName()));
 
+    }
+
+    //二人の着手がないか
+    private boolean isGameOver(){
+        int flag = 0;
+        while(flag!=2){
+            if(players[player].existLegalMove(board)) break;
+            System.out.println("Player: "+players[player].getName()+ " pass");
+            player = opposite(player);
+            flag++;
+        }
+        if(flag==2){  //両者合法手がなければゲーム終了
+            System.out.println("Game Over!");
+            return true;
+        }
+        return false;
     }
 
     
@@ -187,7 +193,8 @@ class Game{
         //各種cpuによって次の手を取得
         if("negacom".equals(players[player].getName())) move = players[player].negaGetMove(nowBoard,CandMove);
         else if("abcom".equals(players[player].getName())) move = players[player].ABGetMove(nowBoard);
-        else move = players[player].randGetMove(nowBoard,CandMove);
+        else if("moncom".equals(players[player].getName())) move = players[player].monGetMove(nowBoard);
+        else move = players[player].randGetMove(nowBoard);
 
         return move;
     }

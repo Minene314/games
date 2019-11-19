@@ -10,6 +10,7 @@ class Player{
     private int dir[][] = {{-1,-1},{-1,0},{-1,1},{0,-1},{0,1},{1,-1},{1,0},{1,1}};  //方向
     private static final int MMDEPTH = 4;  //mini-max法の読む深さ(5までなら割とスムーズ)
     private static final int ABDEPTH = 7;  //αβ法の読む深さ(8までなら割とスムーズ)
+    private static final int MONTIME = 3000;  //モンテカルロシミュレーションの秒数(ms)
 
     Player(String inputName,int inputNum){
         name = inputName;
@@ -32,15 +33,28 @@ class Player{
     }
 
     //ランダムムーブ
-    int randGetMove(Board nowBoard,int[] nowCandMove){
+    int randGetMove(Board nowBoard){
         int count;  //候補手の数
         int move;  //着手
+        int[] nextCand; 
         Random r = new Random();
 
-        board = nowBoard;  //プレイヤーがみている局面を更新
-        candMove = nowCandMove;  //プレイヤーの候補手を更新
-        count = countCand();  //候補手の数
-        move = candMove[r.nextInt(count)];  //着手をランダムに決定
+        nextCand = getLegalMove(nowBoard,num);
+        count = countCand(nextCand);  //候補手の数
+        move = nextCand[r.nextInt(count)];  //着手をランダムに決定
+
+        return move;
+    }
+
+    private int randGetMove(Board nowBoard,int number){
+        int count;  //候補手の数
+        int move;  //着手
+        int[] nextCand; 
+        Random r = new Random();
+
+        nextCand = getLegalMove(nowBoard,number);
+        count = countCand(nextCand);  //候補手の数
+        move = nextCand[r.nextInt(count)];  //着手をランダムに決定
 
         return move;
     }
@@ -267,6 +281,59 @@ class Player{
             }
         }
         return max;
+    }
+
+    int monGetMove(Board realBoard){
+        int[] nextCand = getLegalMove(realBoard,num);
+        int count = countCand(nextCand);
+        int countSim = 0;
+        double[] winPer = new double[count];
+        long start,end;
+        start = end = System.currentTimeMillis();
+        //時間で行う
+        while(end-start<=MONTIME){
+            countSim++;
+            for(int i=0;i<count;i++){
+                int number = num;
+                int column = nextCand[i]/10;
+                int row = nextCand[i]%10;
+                Board monBoard = new Board();
+                realBoard.copy(monBoard);
+                monBoard = reverse(row,column,monBoard,number);
+                number = opposite(number);
+                while(true){
+                    if(!existLegalMove(monBoard,number)){
+                        number = opposite(number);
+                        if(!existLegalMove(monBoard,number)) break;
+                    }
+                    int move = randGetMove(monBoard,number);
+                    int c = move/10;
+                    int r = move%10;
+                    monBoard = reverse(r,c,monBoard,number);
+                    number = opposite(number);
+                }
+                if(monBoard.countStone(num) > monBoard.countStone(opposite(number))){
+                    winPer[i] = winPer[i] + 1.0;
+                }
+            }
+            end = System.currentTimeMillis();
+        }
+        for(int i=0;i<count;i++) winPer[i] = winPer[i]/(double)countSim;
+        double maxPer = winPer[0];
+        int maxMove = 0;
+        for(int i=0;i<count;i++){
+            if(maxPer<winPer[i]){
+                maxPer = winPer[i];
+                maxMove = i;
+            }
+        }
+        for(int i=0;i<count;i++){
+            System.out.print("candMove: ("+(char)(nextCand[i]/10+'a'-1)+","+nextCand[i]%10+")");
+            System.out.println(", WinPer: "+winPer[i]);
+        }
+        System.out.println("done "+(countSim*count)+" Playout");
+        return nextCand[maxMove];
+
     }
 
     //評価関数
