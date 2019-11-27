@@ -6,14 +6,14 @@ import java.lang.Math;
 
 class Game {
     Board board = new Board();
+    Board[] simuBoard = new Board[70];
     private Input in = new Input();
     private Player[] players = new Player[2];
     private int player;
-    private int dir[][] = {{-1,0},{0,-1},{0,1},{1,0}};  //方向
 
     Game() {
-        players[0] = new Player("you");
-        players[1] = new Player("com");
+        players[0] = new Player("you", 1);
+        players[1] = new Player("com", -1);
     }
     //ゲーム本体
     void play() {
@@ -25,22 +25,21 @@ class Game {
         Random r = new Random();
         player = r.nextInt(2);
 
+        int move;
         while(true) {
-            int seed = 1;
-            for(int i = 0; i < player; i++) seed *= -1;
-
-            if(isGameOver(seed)) break;
+            move = 0;
+            if(isGameOver()) break;
             
             System.out.println("your turn: "+players[player].getName());
             System.out.println("you have taken blue piece: "+players[player].getTakenPieceB());
             System.out.println("you have taken red piece: "+players[player].getTakenPieceR());
 
-            getMove(seed);
-            
+            if(player == 1) move = players[player].getComMove(board);
+            else move = getPointAndMove();
+            takeAndMove(move);
+
             player = opposite(player);
             board.display();
-            
-
         }
 
         System.out.println("Winner: "+players[player].getName());
@@ -64,6 +63,7 @@ class Game {
         }
 
         board.init();
+        board.setInitPiece();
 
         Collections.shuffle(list);
 
@@ -77,16 +77,16 @@ class Game {
 
         int count = 0;
         while(count < 4) {
-            String point = in.point("青駒の座標を入力してください(ex.(a1, f3))", count+1);
+            String point = in.point("Where to place blue piece?(ex.(a1, f3)) >", count+1);
             if(point.length() != 2) System.out.println("ex.(a1, f3)");  //入力方法
             else{
                 int column = point.charAt(0)-'a'+1;
                 int row = point.charAt(1)-'1'+1;
                 if(row < 5 || 6 < row || column < 2 || 5 < column) {
-                    System.out.println("b-e列　かつ　5-6行のどこかを指定してください");
+                    System.out.println("Column of 'b-e'　And　Row of '5-6'");
                 }
                 else if(board.getField(row, column) == 2) {
-                    System.out.println("まだ駒が置かれていないところを指定してください");
+                    System.out.println("There is already a blue piece");
                 }
                 else {
                     board.setInitBlue(row,column);
@@ -97,7 +97,8 @@ class Game {
         }
     }
 
-    private boolean isGameOver(int seed) {
+
+    private boolean isGameOver() {
         int count = 0;
         //自分ターンのはじめに脱出マスに青駒がある場合勝ち
         if(player == 0 && (board.getField(1, 1) == 2 || board.getField(1, 6) == 2)) return true;
@@ -151,112 +152,81 @@ class Game {
         return false;
     }
 
+    private int getPointAndMove() {
+        int move = 0;
+        String point;
+        int row;
+        int column;
 
-    private void getComMove() {
-        int count;
-        int point;
-        int cRow, nRow;
-        int cColumn, nColumn;
-        Random r = new Random();
-        int[] candPoint = new int[32];
-        int [] nextPoint = new int[4];
-        candPoint = getCandPoint();
-        count = countCandPoint(candPoint, 32);
-        point = candPoint[r.nextInt(count)];
-        cColumn = point/10;
-        cRow = point%10;
+        while(true){
+            move = 0;
+            row = 0;
+            column = 0;
 
-        nextPoint = getNextPoint(cRow, cColumn);
-        System.out.println((char)(cColumn+'a'-1)+","+cRow);
-        System.out.println();
-        for(int i=0;i<4;i++) System.out.println((char)(nextPoint[i]/10+'a'-1)+","+nextPoint[i]%10);
-        count = countCandPoint(nextPoint, 4);
-        point = nextPoint[r.nextInt(count)];
-        nColumn = point/10;
-        nRow = point%10;
-
-        move(cRow, cColumn, nRow, nColumn);
-
-    }
-
-    private void move(int cRow, int cColumn, int nRow, int nColumn) {
-        if((board.getField(nRow, nColumn) != 0)) {
-            players[player].addTakenPiece(board.getField(nRow, nColumn));
-            board.takePiece(nRow, nColumn);
-        }
-        board.move(cRow, cColumn, nRow, nColumn);
-    }
-
-    private int[] getNextPoint(int row, int column) {
-        int[] nextPoint = new int[4];
-        int count = 0;
-        for(int i = 0; i < 4; i++) {
-            if(board.getField(row+dir[i][0],column+dir[i][1]) >= 0){
-                nextPoint[count] = 10*(column+dir[i][1]) + row+dir[i][0];
-                count++;
+            point = in.point("Which piece?(ex: d4, e2) >");
+            if(point.length() == 2) {
+                column = point.charAt(0)-'a'+1;
+                row = point.charAt(1)-'1'+1;
             }
-        }
-        return nextPoint;
-    }
 
-    private int[] getCandPoint() {
-        int count = 0;
-        int[] candPoint = new int[36];
-        for(int i = 0; i < board.getSize(); i++) {
-            for(int j = 0; j < board.getSize(); j++) {
-                if(board.getField(i, j) < -1){
-                    for(int k = 0; k < 4; k++) {
-                        if(board.getField(i+dir[k][0],j+dir[k][1]) >= 0){
-                            candPoint[count] = 10*j + i;
-                            count++;
-                            break;
-                        }
-                    }
+            if(isLegalPoint(row, column)) {
+                move += column*10 + row;
+                row = 0;
+                column = 0;
+
+                point = in.point("Whare to place?(ex: d4, e2) >");
+                if(point.length() == 2) {
+                    column = point.charAt(0)-'a'+1;
+                    row = point.charAt(1)-'1'+1;
                 }
+
+                if(isLegalMove(move%10, move/10, row, column)) {
+                    move *= 100;
+                    move += column*10 + row;
+
+                    return move;
+                }
+
             }
         }
-        return candPoint;
     }
 
-    private int countCandPoint(int[] candPoint, int n){
-        int count = 0;
-        for(int i = 0; i < n; i++){
-            if(candPoint[i]!=0) count++;
-        }
-        return count;
+    private boolean isLegalPoint(int row, int column) {
+        if(0 <= column && column < 8 && 0 <= row && row < 8)
+            if((board.getField(row, column) != -1) && (board.getField(row, column)*players[player].getNum() > 0))
+                return true;
+        
+        return false;
     }
-    private void getMove(int seed) {
-        if(player == 1) getComMove();
-        else
-        while(true) {
-            System.out.println("which Piece >");
-            String cPoint = in.point();
-            if(cPoint.length() == 2) {
-                int cColumn = cPoint.charAt(0)-'a'+1;
-                int cRow = cPoint.charAt(1)-'1'+1;
-                if(0 <= cColumn && cColumn < 8 && 0 <= cRow && cRow < 8) {
-                    if((board.getField(cRow, cColumn) != -1) && (board.getField(cRow, cColumn)*seed > 0)) {
-                        System.out.println("where >");
-                        String nPoint = in.point();
-                        if(nPoint.length() == 2) {
-                            int nColumn = nPoint.charAt(0)-'a'+1;
-                            int nRow = nPoint.charAt(1)-'1'+1;
-                            if(0 <= nColumn && nColumn < 8 && 0 <= nRow && nRow < 8) {
-                                if((board.getField(nRow, nColumn) != -1) && (board.getField(nRow, nColumn)*seed <= 0)
-                                && (Math.abs(cRow-nRow)+Math.abs(cColumn-nColumn) == 1)) {
-                                    if((board.getField(nRow, nColumn) != 0)) {
-                                        players[player].addTakenPiece(board.getField(nRow, nColumn));
-                                        board.takePiece(nRow, nColumn);
-                                    }
-                                    board.move(cRow, cColumn, nRow, nColumn);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-                
-            }
+
+    private boolean isLegalMove(int beforeRow, int beforeColumn, int afterRow, int afterColumn) {
+        if(0 <= afterColumn && afterColumn < 8 && 0 <= afterRow && afterRow < 8)
+            if((board.getField(afterRow, afterColumn) != -1) && (board.getField(afterRow, afterColumn)*players[player].getNum() <= 0)
+            && (Math.abs(beforeRow-afterRow)+Math.abs(beforeColumn-afterColumn) == 1))
+                return true;
+        
+        return false;
+    }
+
+    private void takeAndMove(int move) {
+        int beforeRow;
+        int beforeColumn;
+        int afterRow;
+        int afterColumn;
+
+        afterRow = move%10;
+        move /= 10;
+        afterColumn = move%10;
+        move /= 10;
+        beforeRow = move%10;
+        move /= 10;
+        beforeColumn = move;
+        
+        if((board.getField(afterRow, afterColumn) != 0)) {
+            players[player].addTakenPiece(board.getField(afterRow, afterColumn));
+            board.takePiece(afterRow, afterColumn);
         }
+
+        board.move(beforeRow, beforeColumn, afterRow, afterColumn);
     }
 }

@@ -17,6 +17,9 @@ class Board {
                 field[i][j].setEmpty();
             }
         }
+        
+    }
+    void setInitPiece() {
         for(int i = 2; i < 6; i++) {
             field[1][i].setEnemyRed();
             field[2][i].setEnemyRed();
@@ -37,11 +40,12 @@ class Board {
         }
     }
 
-    void move(int cRow, int cColumn, int nRow, int nColumn) {
+    void move(int beforeRow, int beforeColumn, int afterRow, int afterColumn) {
         Square tmp = new Square();
-        tmp.copy(field[cRow][cColumn]);
-        field[cRow][cColumn].copy(field[nRow][nColumn]);
-        field[nRow][nColumn].copy(tmp);
+
+        tmp.copy(field[beforeRow][beforeColumn]);
+        field[beforeRow][beforeColumn].copy(field[afterRow][afterColumn]);
+        field[afterRow][afterColumn].copy(tmp);
     }
 
     void takePiece(int row, int column) {
@@ -59,5 +63,19 @@ class Board {
     void setInitBlue(int row, int column) {
         if(row < 3)field[row][column].setEnemyBlue();
         else field[row][column].setBlue();
+    }
+
+    void copy(Board newBoard){
+        newBoard.init();
+        for(int i=0;i<MAXWIDTH;i++) {
+            for(int j=0;j<MAXWIDTH;j++) {
+                int state = field[i][j].getState();
+                if(state==-1) newBoard.field[i][j].setWall();
+                else if(state == 2) newBoard.field[i][j].setBlue();
+                else if(state == -2) newBoard.field[i][j].setEnemyBlue();
+                else if(state == 3) newBoard.field[i][j].setRed();
+                else if(state == -3) newBoard.field[i][j].setEnemyRed();
+            }
+        }
     }
 }
