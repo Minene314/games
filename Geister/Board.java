@@ -17,7 +17,6 @@ class Board {
                 field[i][j].setEmpty();
             }
         }
-        
     }
     void setInitPiece() {
         for(int i = 2; i < 6; i++) {
