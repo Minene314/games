@@ -195,7 +195,7 @@ class Game {
         if(0 <= column && column < 8 && 0 <= row && row < 8)
             if((board.getField(row, column) != -1) && (board.getField(row, column)*players[player].getNum() > 0))
                 return true;
-        
+
         return false;
     }
 
@@ -204,7 +204,7 @@ class Game {
             if((board.getField(afterRow, afterColumn) != -1) && (board.getField(afterRow, afterColumn)*players[player].getNum() <= 0)
             && (Math.abs(beforeRow-afterRow)+Math.abs(beforeColumn-afterColumn) == 1))
                 return true;
-        
+
         return false;
     }
 
@@ -221,7 +221,7 @@ class Game {
         beforeRow = move%10;
         move /= 10;
         beforeColumn = move;
-        
+
         if((board.getField(afterRow, afterColumn) != 0)) {
             players[player].addTakenPiece(board.getField(afterRow, afterColumn));
             board.takePiece(afterRow, afterColumn);

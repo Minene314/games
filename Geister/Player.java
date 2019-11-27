@@ -23,6 +23,7 @@ class Player {
     void setName(String str) {
         name = str;
     }
+
     int getNum() {
         return num;
     }
@@ -31,7 +32,7 @@ class Player {
         if(piece == 2 || piece ==-2) takenPieceB++;
         else takenPieceR++;
     }
-    
+
     String getName() {
         return name;
     }
@@ -82,7 +83,7 @@ class Player {
         }
         return count;
     }
-    
+
     int getComMove(Board realBoard) {
         realBoard.copy(nowBoard);
         int move = 0;
