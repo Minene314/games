@@ -159,7 +159,7 @@ class Game {
                 int column = list2.get(i).get(1);
                 System.out.println(row+","+column);
                 board.setInitBlue(row, column);
-            }    
+            }
         }
         players[0].setSimuBoard(board);
         players[1].setSimuBoard(board);
