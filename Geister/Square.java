@@ -24,6 +24,7 @@ class Square {
     void setValue(int v) {
         value = v;
     }
+
     int getValue() {
         return value;
     }
@@ -32,6 +33,7 @@ class Square {
         state = BLUE;
         character = cBLUE;
     }
+
     void setRed() {
         state = RED;
         character = cRED;
@@ -41,14 +43,17 @@ class Square {
         state = ENEMYBLUE;
         character = cENEMY;
     }
+
     void setEnemyRed() {
         state = ENEMYRED;
         character = cENEMY;
     }
+
     void setWall() {
         state = WALL;
         character = cWALL;
     }
+
     void setEmpty() {
         state = EMPTY;
         character = cEMPTY;
@@ -57,6 +62,7 @@ class Square {
     char getCharacter() {
         return character;
     }
+
     int getState() {
         return state;
     }
@@ -65,5 +71,4 @@ class Square {
         state = s.getState();
         character = s.getCharacter();
     }
-
 }

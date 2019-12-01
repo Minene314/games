@@ -1,9 +1,7 @@
 package Geister;
 
 class Board {
-
     private static final int MAXWIDTH = 8;
-
     private Square field[][] = new Square[MAXWIDTH][MAXWIDTH];
 
     void init() {
@@ -18,6 +16,7 @@ class Board {
             }
         }
     }
+
     void setInitPiece() {
         for(int i = 2; i < 6; i++) {
             field[1][i].setEnemyRed();
@@ -54,7 +53,7 @@ class Board {
     int getSize() {
         return MAXWIDTH;
     }
-    
+
     int getField(int row, int column) {
         return field[row][column].getState();
     }

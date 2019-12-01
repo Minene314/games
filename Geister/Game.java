@@ -2,7 +2,7 @@ package Geister;
 
 import java.util.*;
 import java.lang.Math;
- 
+
 
 class Game {
     Board board = new Board();
@@ -10,16 +10,22 @@ class Game {
     private Input in = new Input();
     private Player[] players = new Player[2];
     private int player;
+    private int mode;
 
     Game() {
         players[0] = new Player("you", 1);
         players[1] = new Player("com", -1);
+        mode = 0;
     }
     //ゲーム本体
     void play() {
+        mode = in.inputInt("mode select >");
 
         //盤面初期化と初期配置決定
         init();
+
+        players[0].createSimuBoard();
+        players[1].createSimuBoard();
 
         //先行決め
         Random r = new Random();
@@ -29,16 +35,52 @@ class Game {
         while(true) {
             move = 0;
             if(isGameOver()) break;
-            
+
             System.out.println("your turn: "+players[player].getName());
             System.out.println("you have taken blue piece: "+players[player].getTakenPieceB());
             System.out.println("you have taken red piece: "+players[player].getTakenPieceR());
 
-            if(player == 1) move = players[player].getComMove(board);
-            else move = getPointAndMove();
+            switch(mode) {
+                case 0:
+                    if(player == 1) move = players[player].getComMove(board);
+                    else move = getPointAndMove();
+                    break;
+                case 1:
+                    if(player == 1) move = players[player].getMonCom(board);
+                    else move = getPointAndMove();
+                    break;
+                case 2:
+                    if(player == 1) move = players[player].getTrustMon(board);
+                    else move = getPointAndMove();
+                    break;
+                case 3:
+                    move = players[player].getComMove(board);
+                    break;
+                case 4:
+                    if(player == 1) move = players[player].getComMove(board);
+                    else move = players[player].getMonCom(board);
+                    break;
+                case 5:
+                    if(player == 1) move = players[player].getComMove(board);
+                    else move = players[player].getTrustMon(board);
+                    break;
+                case 6:
+                    move = players[player].getMonCom(board);
+                    break;
+                case 7:
+                    if(player == 1) move = players[player].getMonCom(board);
+                    else move = players[player].getTrustMon(board);
+                    break;
+                case 8:
+                    move = players[player].getTrustMon(board);
+                    break;
+            }
+
             takeAndMove(move);
 
             player = opposite(player);
+            players[0].updateSimuBoard(move);
+            players[1].updateSimuBoard(move);
             board.display();
         }
 
@@ -73,30 +115,55 @@ class Game {
             System.out.println(row+","+column);
             board.setInitBlue(row, column);
         }
-        board.display();
 
-        int count = 0;
-        while(count < 4) {
-            String point = in.point("Where to place blue piece?(ex.(a1, f3)) >", count+1);
-            if(point.length() != 2) System.out.println("ex.(a1, f3)");  //入力方法
-            else{
-                int column = point.charAt(0)-'a'+1;
-                int row = point.charAt(1)-'1'+1;
-                if(row < 5 || 6 < row || column < 2 || 5 < column) {
-                    System.out.println("Column of 'b-e'　And　Row of '5-6'");
+        board.display();
+        if(0 <= mode && mode < 3) {
+            int count = 0;
+            while(count < 4) {
+                String point = in.point("Where to place blue piece?(ex.(a1, f3)) >", count+1);
+                if(point.length() != 2) System.out.println("ex.(a1, f3)");  //入力方法
+                else{
+                    int column = point.charAt(0)-'a'+1;
+                    int row = point.charAt(1)-'1'+1;
+                    if(row < 5 || 6 < row || column < 2 || 5 < column) {
+                        System.out.println("Column of 'b-e'　And　Row of '5-6'");
+                    }
+                    else if(board.getField(row, column) == 2) {
+                        System.out.println("There is already a blue piece");
+                    }
+                    else {
+                        board.setInitBlue(row,column);
+                        count++;
+                    }
+                    board.display();
                 }
-                else if(board.getField(row, column) == 2) {
-                    System.out.println("There is already a blue piece");
-                }
-                else {
-                    board.setInitBlue(row,column);
-                    count++;
-                }
-                board.display();
             }
         }
-    }
+        else if(2 < mode && mode < 9) {
+            ArrayList<ArrayList<Integer>> list2 = new ArrayList<ArrayList<Integer>>();
+            for(int i = 2; i < 6; i++) {
+                ArrayList<Integer> sub1 = new ArrayList<Integer>();
+                sub1.add(5);
+                sub1.add(i);
+                list2.add(sub1);
+                ArrayList<Integer> sub2 = new ArrayList<Integer>();
+                sub2.add(6);
+                sub2.add(i);
+                list2.add(sub2);
+            }
 
+            Collections.shuffle(list2);
+
+            for(int i = 0; i < 4; i++) {
+                int row = list2.get(i).get(0);
+                int column = list2.get(i).get(1);
+                System.out.println(row+","+column);
+                board.setInitBlue(row, column);
+            }    
+        }
+        players[0].setSimuBoard(board);
+        players[1].setSimuBoard(board);
+    }
 
     private boolean isGameOver() {
         int count = 0;
@@ -186,7 +253,6 @@ class Game {
 
                     return move;
                 }
-
             }
         }
     }
@@ -223,6 +289,8 @@ class Game {
         beforeColumn = move;
 
         if((board.getField(afterRow, afterColumn) != 0)) {
+            players[0].worldDelete(afterRow, afterColumn, board.getField(afterRow, afterColumn));
+            players[1].worldDelete(afterRow, afterColumn, board.getField(afterRow, afterColumn));
             players[player].addTakenPiece(board.getField(afterRow, afterColumn));
             board.takePiece(afterRow, afterColumn);
         }
